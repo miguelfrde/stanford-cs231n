@@ -8,5 +8,6 @@ Assignments:
   - [SVM classifier](assignment1/svm.ipynb)
   - [Softmax classifier](assignment1/softmax.ipynb)
   - [Neural network](assignment1/two_layer_net.ipynb)
+  - [Image Features](assignment1/features.ipynb)
 
 [Course website](http://cs231n.stanford.edu/2017/)
