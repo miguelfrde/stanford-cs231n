@@ -10,4 +10,7 @@ Assignments:
   - [Neural network](assignment1/two_layer_net.ipynb)
   - [Image Features](assignment1/features.ipynb)
 
+- [Assignment 2](http://cs231n.github.io/assignments2017/assignment2/)
+  - [Fully connected nets](assignment2/FullyConnectedNets.ipynb)
+
 [Course website](http://cs231n.stanford.edu/2017/)
