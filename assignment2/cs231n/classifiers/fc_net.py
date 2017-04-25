@@ -180,6 +180,9 @@ class FullyConnectedNet(object):
             self.params['W' + str(i)] = (
                     np.random.normal(scale=weight_scale, size=(previous_dim, hidden_dim)))
             self.params['b' + str(i)] = np.zeros(hidden_dim)
+            if self.use_batchnorm and i < self.num_layers - 1:
+                self.params['gamma' + str(i)] = np.ones(hidden_dim)
+                self.params['beta' + str(i)] = np.zeros(hidden_dim)
             previous_dim = hidden_dim
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -206,7 +209,6 @@ class FullyConnectedNet(object):
         # Cast all parameters to the correct datatype
         for k, v in self.params.items():
             self.params[k] = v.astype(dtype)
-
 
     def loss(self, X, y=None):
         """
@@ -245,6 +247,10 @@ class FullyConnectedNet(object):
             b = self.params['b' + str(i)]
             if i == self.num_layers - 1:  # last layer
                 scores, cache[i] = affine_forward(X_mid, W, b)
+            elif self.use_batchnorm:
+                gamma = self.params['gamma' + str(i)]
+                beta = self.params['beta' + str(i)]
+                X_mid, cache[i] = affine_relu_batchnorm_forward(X_mid, W, b, gamma, beta, self.bn_params[i])
             else:
                 X_mid, cache[i] = affine_relu_forward(X_mid, W, b)
         ############################################################################
@@ -277,6 +283,10 @@ class FullyConnectedNet(object):
             loss += 0.5 * self.reg * np.sum(W * W)
             if i == self.num_layers - 1:  # last layer
                 dprev, dW, db = affine_backward(dprev, cache[i])
+            elif self.use_batchnorm:
+                dprev, dW, db, dgamma, dbeta = affine_relu_batchnorm_backward(dprev, cache[i])
+                grads['gamma' + str(i)] = dgamma
+                grads['beta' + str(i)] = dbeta
             else:
                 dprev, dW, db = affine_relu_backward(dprev, cache[i])
             grads['W' + str(i)] = dW + self.reg * W
