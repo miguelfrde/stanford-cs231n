@@ -245,14 +245,21 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers):
             W = self.params['W' + str(i)]
             b = self.params['b' + str(i)]
+            X_mid, cache['fc' + str(i)] = affine_forward(X_mid, W, b)
+
             if i == self.num_layers - 1:  # last layer
-                scores, cache[i] = affine_forward(X_mid, W, b)
-            elif self.use_batchnorm:
+                scores = X_mid
+                break
+
+            if self.use_batchnorm:
                 gamma = self.params['gamma' + str(i)]
                 beta = self.params['beta' + str(i)]
-                X_mid, cache[i] = affine_relu_batchnorm_forward(X_mid, W, b, gamma, beta, self.bn_params[i])
-            else:
-                X_mid, cache[i] = affine_relu_forward(X_mid, W, b)
+                X_mid, cache['bn' + str(i)] = batchnorm_forward(X_mid, gamma, beta, self.bn_params[i])
+
+            if self.use_dropout:
+                X_mid, cache['drop' + str(i)] = dropout_forward(X_mid, self.dropout_param)
+
+            X_mid, cache['relu' + str(i)] = relu_forward(X_mid)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -281,14 +288,16 @@ class FullyConnectedNet(object):
             W = self.params['W' + str(i)]
             b = self.params['b' + str(i)]
             loss += 0.5 * self.reg * np.sum(W * W)
-            if i == self.num_layers - 1:  # last layer
-                dprev, dW, db = affine_backward(dprev, cache[i])
-            elif self.use_batchnorm:
-                dprev, dW, db, dgamma, dbeta = affine_relu_batchnorm_backward(dprev, cache[i])
-                grads['gamma' + str(i)] = dgamma
-                grads['beta' + str(i)] = dbeta
-            else:
-                dprev, dW, db = affine_relu_backward(dprev, cache[i])
+            if i < self.num_layers - 1:
+                dprev = relu_backward(dprev, cache['relu' + str(i)])
+                if self.use_dropout:
+                    dprev = dropout_backward(dprev, cache['drop' + str(i)])
+                if self.use_batchnorm:
+                    dprev, dgamma, dbeta = batchnorm_backward(dprev, cache['bn' + str(i)])
+                    grads['gamma' + str(i)] = dgamma
+                    grads['beta' + str(i)] = dbeta
+
+            dprev, dW, db = affine_backward(dprev, cache['fc' + str(i)])
             grads['W' + str(i)] = dW + self.reg * W
             grads['b' + str(i)] = db
         ############################################################################
