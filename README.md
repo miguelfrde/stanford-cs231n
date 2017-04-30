@@ -14,5 +14,6 @@ Assignments:
   - [Fully connected nets](assignment2/FullyConnectedNets.ipynb)
   - [Batch normalization](assignment2/BatchNormalization.ipynb)
   - [Dropout](assignment2/Dropout.ipynb)
+  - [Convolutional Networks](assignment2/ConvolutionalNetworks.ipynb)
 
 [Course website](http://cs231n.stanford.edu/2017/)
