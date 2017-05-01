@@ -15,5 +15,6 @@ Assignments:
   - [Batch normalization](assignment2/BatchNormalization.ipynb)
   - [Dropout](assignment2/Dropout.ipynb)
   - [Convolutional Networks](assignment2/ConvolutionalNetworks.ipynb)
+  - [TensorFlow](assignment2/TensorFlow.ipynb)
 
 [Course website](http://cs231n.stanford.edu/2017/)
