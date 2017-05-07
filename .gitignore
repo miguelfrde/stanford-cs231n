@@ -89,3 +89,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+project/datasets/MillionSongSubset
+project/datasets/genres
