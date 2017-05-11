@@ -75,7 +75,7 @@ def process_songs_in_dir(dirname, overwrite=False):
 def main(dataset_dir, overwrite):
     spectograms, classes = np.array(process_songs_in_dir(dataset_dir, overwrite=overwrite))
     X = np.vstack(spectograms).reshape((len(spectograms),) + DEFAULT_SHAPE)
-    y = np.asarray(classes)
+    y = np.vstack(classes).reshape((len(spectograms), len(CLASSES)))
     assert np.array_equal(X[0], spectograms[0])
     with open(os.path.join(dataset_dir, 'data.pickle'), 'wb') as f:
         f.write(pickle.dumps([X, y]))
