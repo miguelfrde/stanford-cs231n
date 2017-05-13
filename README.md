@@ -2,6 +2,9 @@
 
 My solutions for Stanford CS231n taken during Spring 2017.
 
+[Course website](http://cs231n.stanford.edu/2017/)
+
+
 ## Assignments
 
 ### Assignment 1
@@ -34,6 +37,3 @@ My solutions for Stanford CS231n taken during Spring 2017.
 ## Project
 
 - [Deep Music Genre](project/DeepMusicGenre.ipynb)
-
-
-[Course website](http://cs231n.stanford.edu/2017/)
