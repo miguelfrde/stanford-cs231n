@@ -28,7 +28,7 @@ rsync -avzuP publicdata.opensciencedatacloud.org::ark:/31807/osdc-c1c763e4/ /pat
 Install [hdf5](https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8.7/obtain5187.html)
 
 ```
-sudo apt-get install libhdf5-serial-dev
+sudo apt-get install libhdf5-serial-dev graphviz
 
 # Get python 3
 git clone https://github.com/miguelfrde/stanford-cs231n

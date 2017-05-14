@@ -77,6 +77,7 @@ def main(dataset_dir, overwrite):
     X = np.vstack(spectograms).reshape((len(spectograms),) + DEFAULT_SHAPE)
     y = np.vstack(classes).reshape((len(spectograms), len(CLASSES)))
     assert np.array_equal(X[0], spectograms[0])
+    X = X.transpose(0, 2, 1)
     with open(os.path.join(dataset_dir, 'data.pickle'), 'wb') as f:
         f.write(pickle.dumps([X, y]))
 
