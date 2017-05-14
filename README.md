@@ -33,6 +33,8 @@ My solutions for Stanford CS231n taken during Spring 2017.
 
 [See description](http://cs231n.github.io/assignments2017/assignment3/)
 
+- [Image Captioning with RNNs](assignment3/RNN_Captioning.ipynb)
+
 
 ## Project
 
