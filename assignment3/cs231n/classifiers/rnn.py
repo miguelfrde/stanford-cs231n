@@ -156,7 +156,7 @@ class CaptioningRNN(object):
         if self.cell_type == 'rnn':
             h, h_cache = rnn_forward(captions_vec, h0, Wx, Wh, b)
         else:
-            pass
+            h, h_cache = lstm_forward(captions_vec, h0, Wx, Wh, b)
         assert h.shape == (N, T, self.hidden_dim)
 
         # (4) Compute scores over vocabulary at each timestep using hidden states.
@@ -170,7 +170,7 @@ class CaptioningRNN(object):
         if self.cell_type == 'rnn':
             dcaptions_vec, dh0, grads['Wx'], grads['Wh'], grads['b'] = rnn_backward(dh, h_cache)
         else:
-            pass
+            dcaptions_vec, dh0, grads['Wx'], grads['Wh'], grads['b'] = lstm_backward(dh, h_cache)
         grads['W_embed'] = word_embedding_backward(dcaptions_vec, captions_vec_cache)
         _, grads['W_proj'], grads['b_proj'] = affine_backward(dh0, cache_h0)
         ############################################################################
@@ -238,6 +238,7 @@ class CaptioningRNN(object):
         captions[:, 0] = self._start
         prev_word_index = [self._start] * N
         prev_h = h0
+        prev_c = np.zeros(prev_h.shape)
         for t in range(max_length):
             # (1) Embed previous word using learned word embeddings.
             prev_word_embedding, _ = word_embedding_forward(prev_word_index, W_embed)
@@ -245,7 +246,7 @@ class CaptioningRNN(object):
                 # (2) Make RNN step to get next hidden state.
                 h, _ = rnn_step_forward(prev_word_embedding, prev_h, Wx, Wh, b)
             else:
-                pass
+                h, prev_c, _ = lstm_step_forward(prev_word_embedding, prev_h, prev_c, Wx, Wh, b)
             # (3) Apply learned affine transformation to next hidden state to get scores
             #     for all words in voc.
             scores, _ = affine_forward(h, W_vocab, b_vocab)
