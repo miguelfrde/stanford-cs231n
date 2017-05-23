@@ -37,6 +37,7 @@ My solutions for Stanford CS231n taken during Spring 2017.
 - [Image Captioning with LSTMs](assignment3/LSTM_Captioning.ipynb)
 - [Network Visualization](assignment3/NetworkVisualization-TensorFlow.ipynb)
 - [Style Transfer](assignment3/StyleTransfer-TensorFlow.ipynb)
+- [GANs](assignment3/GANs-TensorFlow.ipynb)
 
 
 ## Project
