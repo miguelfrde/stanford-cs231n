@@ -92,3 +92,4 @@ ENV/
 
 project/datasets/MillionSongSubset
 project/datasets/genres
+project/datasets/magnatagatune
