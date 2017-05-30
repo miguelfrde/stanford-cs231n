@@ -116,14 +116,14 @@ def save_dataset(dirname, dataset_type, X, y, overwrite=False):
     filenames_file = os.path.join(dirname, dataset_type, 'filenames.pickle')
 
     if not os.path.isfile(labels_file) or overwrite:
-        write_pickle(labels_file, y)
+        write_pickle(labels_file, y[:20])
     if not os.path.isfile(filenames_file) or overwrite:
-        write_pickle(filenames_file, X)
+        write_pickle(filenames_file, X[:20])
 
     results = []
     print('Processing %s dataset' % (dataset_type,))
     for i in range(multiprocessing.cpu_count()):
-        results.append(pool.apply_async(save_partial_dataset, args=(i, dirname, X, full_path, overwrite)))
+        results.append(pool.apply_async(save_partial_dataset, args=(i, dirname, X[:20], full_path, overwrite)))
     assert all([r.get() for r in results])
 
 

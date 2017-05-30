@@ -6,7 +6,7 @@ from keras.layers.merge import concatenate
 from keras.models import Model
 
 
-def get(input_shape, num_classes, batchnorm=True):
+def get(input_shape, num_classes, batchnorm=True, activation='softmax'):
     """
     Based on "Recommending music on Spotify with Deep Learning"
     """
@@ -26,5 +26,5 @@ def get(input_shape, num_classes, batchnorm=True):
     layer = Dropout(rate=0.5)(layer)
     layer = Dense(units=num_classes)(layer)
     layer = Dropout(rate=0.5)(layer)
-    layer = Activation('softmax')(layer)
+    layer = Activation(activation)(layer)
     return Model(inputs=input_layer, outputs=layer)
