@@ -63,9 +63,11 @@ def process_song(song_path, label, index, destination_dir, overwrite=False, writ
     spectogram = librosa.power_to_db(spectogram, ref=np.max)
     write_pickle(os.path.join(destination_dir, picklefile), fix_shape(spectogram).T)
     if writer:
+        spectogram_raw = spectogram.tostring()
+        label_raw = label.tostring()
         example = tf.train.Example(features=tf.train.Features(feature={
-            'X':  tf.train.Feature(float_list=tf.train.FloatList(value=spectogram)),
-            'y': tf.train.Feature(int64_list=tf.train.Int64List(value=label))
+            'X': tf.train.Feature(bytes_list=tf.train.BytesList(value=[spectogram_raw])),
+            'y': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_raw]))
         }))
         lock.acquire()
         writer.write(example.SerializeToString())
@@ -115,19 +117,21 @@ def save_partial_dataset(index, dirname, X, y, full_path, overwrite):
     lo = int(index*(n / W))
     hi = int((index + 1)*(n / W))
     print('  Processing %d to %d out of %d' % (lo, hi - 1, n))
+    tfrecord_filename = os.path.join(full_path, 'data.tfrecords')
+    writer = tf.python_io.TFRecordWriter(tfrecord_filename)
     for i, x in enumerate(X[lo:hi]):
         label = y[lo+i]
-        process_song(os.path.join(dirname, x), label, i + lo, full_path, overwrite=overwrite)
+        process_song(os.path.join(dirname, x), label, i + lo, full_path, overwrite=overwrite, writer=writer)
+    writer.close()
     return True
 
 
 def save_dataset(dirname, dataset_type, X, y, overwrite=False):
     global pool
+    global writer
     full_path = os.path.join(dirname, dataset_type)
     labels_file = os.path.join(dirname, dataset_type, 'labels.pickle')
     filenames_file = os.path.join(dirname, dataset_type, 'filenames.pickle')
-    tfrecord_filename = os.path.join(dirname, dataset_type, 'data.tfrecords')
-    writer = tf.python_io.TFRecordWriter(tfrecord_filename)
 
     if not os.path.isfile(labels_file) or overwrite:
         write_pickle(labels_file, y[:20])
@@ -139,7 +143,6 @@ def save_dataset(dirname, dataset_type, X, y, overwrite=False):
     for i in range(multiprocessing.cpu_count()):
         results.append(pool.apply_async(save_partial_dataset, args=(i, dirname, X[:20], y[:20], full_path, overwrite)))
     assert all([r.get() for r in results])
-    writer.close()
 
 
 @click.command()
