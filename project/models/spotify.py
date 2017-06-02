@@ -1,3 +1,4 @@
+import tensorflow as tf
 from keras.layers import Input
 from keras.layers.convolutional import Conv1D
 from keras.layers.core import Activation, Dense, Dropout, Flatten
@@ -28,3 +29,26 @@ def get(input_shape, num_classes, batchnorm=True, activation='softmax'):
     layer = Dropout(rate=0.5)(layer)
     layer = Activation(activation)(layer)
     return Model(inputs=input_layer, outputs=layer)
+
+
+def get_tf(x, num_classes, batchnorm=True, activation='softmax'):
+    layer = x
+    for i in range(3):
+        with tf.variable_scope('conv_relu_pool_%d' % i):
+            layer = tf.layers.conv1d(
+                inputs=layer,
+                filters=256,
+                kernel_size=4,
+                padding='same',
+                activation=tf.nn.relu)
+            layer = tf.layers.max_pooling1d(inputs=layer, pool_size=2, strides=2)
+    avg_pool = tf.layers.average_pooling1d(inputs=layer, pool_size=2, strides=2)
+    max_pool = tf.layers.max_pooling1d(inputs=layer, pool_size=2, strides=2)
+    layer = tf.concat([avg_pool, max_pool], axis=-1)
+    layer = tf.contrib.layers.flatten(layer)
+    layer = tf.layers.dense(layer, units=2048)
+    layer = tf.layers.dropout(layer, rate=0.5)
+    layer = tf.layers.dense(layer, units=num_classes)
+    layer = tf.layers.dropout(layer, rate=0.5)
+    return layer
+

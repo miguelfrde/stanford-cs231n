@@ -33,36 +33,35 @@ def _load_pickle(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
 
+
 def _list_dataset(dataset_name):
     dataset_path = os.path.join(PATH_MAGNATAGATUNE, dataset_name)
     labels_file = os.path.join(dataset_path, 'labels.pickle')
     filenames = [os.path.join(dataset_path, '%d.pickle') % i for i, f in enumerate(os.listdir(dataset_path))
-                 if re.match(r'\d+\.pickle', f)]
+                 if re.match(r'\d+\.tfrecord', f)]
     labels = _load_pickle(labels_file)
     return filenames, np.asarray(labels)
 
 
-def _parse_function(filename, label):
-    spectogram = tf.cast(_load_pickle(filename), tf.float32)
+def _parse_function(example_proto):
+    features = {
+        'X': tf.FixedLenFeature((), tf.string),
+        'y': tf.FixedLenFeature((), tf.string)}
+    parsed_features = tf.parse_single_example(example_proto, features)
+    spectogram = tf.decode_raw(parsed_features['X'], tf.float64)
+    spectogram = tf.cast(spectogram, tf.float32)
+    spectogram = tf.reshape(spectogram, INPUT_SHAPE)
+    label = tf.decode_raw(parsed_features['y'], tf.uint8)
+    label = tf.reshape(label, [len(CLASSES)])
     return spectogram, label
 
 
-def _init_datasets(train_filenames, val_filenames, train_labels, val_labels):
+def _init_datasets(train_filenames, val_filenames):
     train_filenames = tf.constant(train_filenames)
-    train_labels = tf.constant(train_labels)
-    train_dataset = tf.contrib.data.Dataset.from_tensor_slices((train_filenames, train_labels))
-    print(train_dataset.output_types)
-    print(train_dataset.output_shapes)
-    train_dataset = train_dataset.map(
-        lambda filename, label: tf.py_func(
-                _parse_function, [filename, label], [tf.float32, label.dtype]),
-        num_threads=NUM_WORKERS, output_buffer_size=BATCH_SIZE)
-    print(train_dataset.output_types)
-    print(train_dataset.output_shapes)
+    train_dataset = tf.contrib.data.TFRecordDataset(train_filenames)
+    train_dataset = train_dataset.map(_parse_function)
     train_dataset = train_dataset.shuffle(buffer_size=10000)
     batched_train_dataset = train_dataset.batch(BATCH_SIZE)
-    print(batched_train_dataset.output_types)
-    print(batched_train_dataset.output_shapes)
 
     iterator = tf.contrib.data.Iterator.from_structure(
         batched_train_dataset.output_types, batched_train_dataset.output_shapes)
@@ -81,7 +80,7 @@ def main():
     graph = tf.Graph()
     with graph.as_default():
         spectograms, labels, train_init_op, val_init_op = _init_datasets(
-            train_filenames, val_filenames, train_labels, val_labels)
+            train_filenames, val_filenames)
 
         is_training = tf.placeholder(tf.bool)
         output_layer = spotify.get_tf(spectograms, len(CLASSES), activation='sigmoid')
@@ -99,21 +98,21 @@ def main():
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         tf.get_default_graph().finalize()
 
-        with tf.Session(graph=graph) as sess:
-            for epoch in range(EPOCHS):
-                print('Epoch %d / %d' % (epoch + 1, EPOCHS))
-                sess.run(train_init_op)
-                while True:
-                    try:
-                        _ = sess.run(train_op, {is_training: True})
-                    except tf.errors.OutOfRangeError:
-                        break
+    with tf.Session(graph=graph) as sess:
+        for epoch in range(EPOCHS):
+            print('Epoch %d / %d' % (epoch + 1, EPOCHS))
+            sess.run(train_init_op)
+            while True:
+                try:
+                    _ = sess.run(train_op, {is_training: True})
+                except tf.errors.OutOfRangeError:
+                    break
 
-                # Check accuracy on the train and val sets every epoch
-                train_acc = check_accuracy(sess, correct_prediction, is_training, train_init_op)
-                val_acc = check_accuracy(sess, correct_prediction, is_training, val_init_op)
-                print('  Train accuracy: %f' % train_acc)
-                print('  Val accuracy: %f\n' % val_acc)
+            # Check accuracy on the train and val sets every epoch
+            train_acc = check_accuracy(sess, correct_prediction, is_training, train_init_op)
+            val_acc = check_accuracy(sess, correct_prediction, is_training, val_init_op)
+            print('  Train accuracy: %f' % train_acc)
+            print('  Val accuracy: %f\n' % val_acc)
 
 
 if __name__ == '__main__':

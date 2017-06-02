@@ -23,7 +23,6 @@ CLASSES = [
 CLASSES_DICT = {c: i for i, c in enumerate(CLASSES)}
 DEFAULT_SHAPE = (128, 628)
 pool = None  # Global pool intialized in __main__
-lock = None
 
 
 def get_class_vector(genres):
@@ -43,16 +42,15 @@ def fix_shape(spectogram, default_shape=DEFAULT_SHAPE):
     return spectogram
 
 
-def process_song(song_path, label, index, destination_dir, overwrite=False, writer=None):
-    global lock
+def process_song(song_path, label, index, destination_dir, overwrite=False):
     basename, extension = os.path.splitext(song_path)
     if extension not in ('.mp3', '.au'):
         return
     if not os.path.isfile(song_path):
         print('NOT FOUND: ', song_path)
         return
-    picklefile = str(index) + '.pickle'
-    if not overwrite and os.path.isfile(picklefile):
+    npfile = os.path.join(destination_dir, str(index) + '.npy')
+    if not overwrite and os.path.isfile(npfile):
         return
     try:
         y, sr = librosa.load(song_path, mono=True)
@@ -61,17 +59,18 @@ def process_song(song_path, label, index, destination_dir, overwrite=False, writ
         return None, None
     spectogram = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, n_fft=2048, hop_length=1024)
     spectogram = librosa.power_to_db(spectogram, ref=np.max)
-    write_pickle(os.path.join(destination_dir, picklefile), fix_shape(spectogram).T)
-    if writer:
-        spectogram_raw = spectogram.tostring()
-        label_raw = label.tostring()
-        example = tf.train.Example(features=tf.train.Features(feature={
-            'X': tf.train.Feature(bytes_list=tf.train.BytesList(value=[spectogram_raw])),
-            'y': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_raw]))
-        }))
-        lock.acquire()
-        writer.write(example.SerializeToString())
-        lock.release()
+    np.save(npfile, spectogram)
+    tfrecord_filename = os.path.join(destination_dir, str(index) + '.tfrecord')
+    writer = tf.python_io.TFRecordWriter(tfrecord_filename)
+    spectogram_raw = spectogram.tostring()
+    label_raw = np.array(label, dtype=np.uint8).tostring()
+    example = tf.train.Example(features=tf.train.Features(feature={
+        'X': tf.train.Feature(bytes_list=tf.train.BytesList(value=[spectogram_raw])),
+        'y': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_raw]))
+    }))
+    lock.acquire()
+    writer.write(example.SerializeToString())
+    lock.release()
 
 
 def get_annotations_dict(dirname):
@@ -117,12 +116,9 @@ def save_partial_dataset(index, dirname, X, y, full_path, overwrite):
     lo = int(index*(n / W))
     hi = int((index + 1)*(n / W))
     print('  Processing %d to %d out of %d' % (lo, hi - 1, n))
-    tfrecord_filename = os.path.join(full_path, 'data.tfrecords')
-    writer = tf.python_io.TFRecordWriter(tfrecord_filename)
     for i, x in enumerate(X[lo:hi]):
         label = y[lo+i]
-        process_song(os.path.join(dirname, x), label, i + lo, full_path, overwrite=overwrite, writer=writer)
-    writer.close()
+        process_song(os.path.join(dirname, x), label, i + lo, full_path, overwrite=overwrite)
     return True
 
 
