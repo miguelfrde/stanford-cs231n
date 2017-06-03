@@ -16,12 +16,12 @@ SEVEN_DIGITAL_REQUEST_TOKEN_URL = 'https://api.7digital.com/1.2/oauth/requesttok
 SEVEN_DIGITAL_REQUEST_TOKEN_URL = 'https://account.7digital.com/{oauth_key}/oauth/authorise?oauth_token={oauth_token}'
 SEVEN_DIGITAL_ACCESS_TOKEN_URL = 'https://api.7digital.com/1.2/oauth/accesstoken'
 
-OAUTH_CLIENT_KEY = os.environ['OAUTH_CLIENT_KEY']
-OAUTH_CLIENT_SECRET = os.environ['OAUTH_CLIENT_KEY']
-OAUTH_REQUEST_TOKEN = os.environ['OAUTH_REQUEST_TOKEN']
-OAUTH_REQUEST_SECRET = os.environ['OAUTH_REQUEST_SECRET']
-OAUTH_ACCESS_TOKEN = os.environ['OAUTH_ACCESS_TOKEN']
-OAUTH_ACCESS_SECRET = os.environ['OAUTH_ACCESS_SECRET']
+OAUTH_CLIENT_KEY='7d54pvgbj95q'
+OAUTH_CLIENT_SECRET='tprh5qpdy8ec3ctv'
+OAUTH_REQUEST_TOKEN='Y25GGN7'
+OAUTH_REQUEST_SECRET='UFdYm3vtsEaYvAkeEIfW5A=='
+OAUTH_ACCESS_TOKEN='iapMJgwIl0uIiLuWS7yleA'
+OAUTH_ACCESS_SECRET='ebzeSfQGTEu38VhucA0C3A'
 
 
 def request_token():
@@ -33,6 +33,8 @@ def request_token():
         body='country=ww',
         method='POST'
     )
+    print(content)
+    print(response)
     tokens_json = json.loads(content)['oauth_request_token']
     oauth_token, oauth_token_secret = tokens_json['oauth_token'], tokens_json['oauth_token_secret']
     print('Authorization url:', SEVEN_DIGITAL_REQUEST_TOKEN_URL.format(
@@ -48,7 +50,7 @@ def request_access_token():
     response, content = client.request(
         SEVEN_DIGITAL_ACCESS_TOKEN_URL,
         headers={'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'},
-        body='country=ww',
+        body='country=us',
         method='POST')
     tokens_json = json.loads(content)['oauth_request_token']
     oauth_token, oauth_token_secret = tokens_json['oauth_token'], tokens_json['oauth_token_secret']
@@ -60,7 +62,7 @@ def get_clip_url(track_id):
     return SEVEN_DIGITAL_CLIP_URL.format(
         track_id=track_id,
         oauth_key=OAUTH_ACCESS_TOKEN,
-        country='ww')
+        country='us')
 
 
 def fetch_song_from_h5(h5_filepath):
@@ -80,7 +82,7 @@ def fetch_song_from_h5(h5_filepath):
         consumer,
         http_url=get_clip_url(track_id),
         is_form_encoded=True,
-        parameters={'country': 'ww'})
+        parameters={'country': 'us'})
     signing_method = oauth.SignatureMethod_HMAC_SHA1()
     request.sign_request(signing_method, consumer, token)
     url = request.to_url()
@@ -116,4 +118,6 @@ def main(real_dataset):
 
 
 if __name__ == '__main__':
-    main()
+    request_token()
+    #request_access_token()
+    #main()

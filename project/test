@@ -1,0 +1,24 @@
+PATH_MAGNATAGATUNE = 'datasets/magnatagatune'
+X_DATA_SHAPE = (15659, 628, 128)
+Y_DATA_SHAPE = (15659, 40)
+
+with tf.Graph().as_default():
+    X_init = tf.placeholder(tf.float32, shape=X_DATA_SHAPE)
+    y_init = tf.placeholder(tf.float32, shape=Y_DATA_SHAPE)
+    X_data = tf.Variable(X_init, name='X_data')
+    y_data = tf.Variable(y_init, name='y_data')
+    saver = tf.train.Saver()
+    with tf.Session() as sess:
+        saver.restore(sess, os.path.join(PATH_MAGNATAGATUNE, 'data.ckpt'))
+
+        
+X_data = X_data.eval()
+y_data = y_data.eval()
+plot_spectogram(X_data[0], tag='Mean spectogram')
+X_train, X_val, y_train, y_val = train_test_split(
+    X_data, y_data, test_size=0.25, random_state=42)
+mean_spectogram = np.mean(X_train, axis=0)
+plot_spectogram(mean_spectogram, tag='Mean spectogram')
+std_spectogram = np.std(X_train, axis=0)
+X_val = (X_val - mean_spectogram) / std_spectogram
+X_train = (X_train - mean_spectogram) / std_spectogram

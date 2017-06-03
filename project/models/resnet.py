@@ -194,6 +194,63 @@ def _validate_bottleneck_unit(unit_cls):
         raise ValueError('Invalid bottleneck unit')
 
 
+
+def get_tf(x, num_classes):
+    units_per_block = [2, 2, 2, 2]
+    with tf.variable_scope('resnet'):
+        layer = x
+        layer = tf.layers.conv2d(
+            inputs=layer,
+            filters=conv_filter,
+            kernel_size=(7, 7),
+            strides=(2, 2),
+            padding='same')
+        layer = tf.layers.batch_normalization(layer)
+        layer = tf.nn.relu(layer)
+        layer = tf.layers.max_pooling2d(layer, pool_size=(3, 3), strides=(2, 2), padding='same')
+        with tf.variable_scope('resnet-resblock'):
+            filters = 64
+            for i, units in enumerate(units_per_block):
+                for j in range(units):
+                    strides = (1, 1)
+                    if i != 0 and j == 0:
+                        strides = (2, 2)
+                    with tf.variable_scope('resnet-residual-unit-%d' % j):
+                        inp = layer
+                        res_layer = tf.layers.batch_normalization(inp)
+                        res_layer = tf.nn.relu(res_layer)
+                        res_layer = tf.layers.conv2d(
+                            inputs=res_layer,
+                            filters=filters,
+                            kernel_size=(3, 3),
+                            strides=strides,
+                            padding='same')
+                        res_layer = tf.layers.batch_normalization(res_layer)
+                        res_layer = tf.nn.relu(res_layer)
+                        res_layer = tf.layers.conv2d(
+                            inputs=res_layer,
+                            filters=filters,
+                            kernel_size=(3, 3),
+                            strides=(1, 1),
+                            padding='same')
+                        shortcut = inp
+                        if tf.not_equal(tf.shape(inp), tf.shape(res_layer)):
+                            shortcut = tf.layers.conv2d(
+                                inputs=res_layer,
+                                filters=filters,
+                                kernel_size=(3, 3),
+                                strides=(1, 1),
+                                padding='same')
+                        layer = tf.add(inp, res_layer)
+                layer = ResidualBlock(units, filters, residual_unit_cls, is_first_block=(i == 0))(current)
+                filters *= 2
+        layer = tf.nn.relu(layer)
+        layer = tf.layers.avg_pooling2d(pool_size=(7, 7), strides=(1, 1))
+        layer = tf.contrib.layers.flatten(layer)
+        layer = tf.layers.dense(layer, units=num_classes, activation=tf.sigmoid)
+        return layer
+
+
 if __name__ == '__main__':
     resnet34 = get_34((224, 224, 3), 1000)
     plot_model(resnet34, to_file='resnet_34png')

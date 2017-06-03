@@ -9,17 +9,9 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-
 CLASSES = [
-    'classical', 'instrumental', 'electronica', 'techno',
-    'male voice', 'rock', 'ambient', 'female voice', 'opera',
-    'indian', 'choir', 'pop', 'heavy metal', 'jazz', 'new age',
-    'dance', 'country', 'eastern', 'baroque', 'funk', 'hard rock',
-    'trance', 'folk', 'oriental', 'medieval', 'irish', 'blues',
-    'middle eastern', 'punk', 'celtic', 'arabic', 'rap',
-    'industrial', 'world', 'hip hop', 'disco', 'soft rock',
-    'jungle', 'reggae', 'happy',
-]
+    'guitar', 'classical', 'slow', 'techno', 'strings', 'drums', 'electronic',
+    'rock', 'fast', 'piano', 'ambient', 'beat', 'violin', 'vocal', 'synth', 'female', 'indian', 'opera', 'male', 'singing', 'vocals', 'no vocals', 'harpsichord', 'loud', 'quiet', 'flute', 'woman', 'male vocal', 'pop', 'no vocal', 'soft', 'sitar', 'solo', 'man', 'classic', 'choir', 'voice', 'new age', 'dance', 'female vocal', 'male voice', 'beats', 'harp', 'cello', 'no voice', 'weird', 'country', 'metal', 'female voice', 'choral']
 CLASSES_DICT = {c: i for i, c in enumerate(CLASSES)}
 DEFAULT_SHAPE = (128, 628)
 pool = None  # Global pool intialized in __main__
@@ -59,18 +51,15 @@ def process_song(song_path, label, index, destination_dir, overwrite=False):
         return None, None
     spectogram = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, n_fft=2048, hop_length=1024)
     spectogram = librosa.power_to_db(spectogram, ref=np.max)
-    np.save(npfile, spectogram)
     tfrecord_filename = os.path.join(destination_dir, str(index) + '.tfrecord')
     writer = tf.python_io.TFRecordWriter(tfrecord_filename)
-    spectogram_raw = spectogram.tostring()
+    spectogram_raw = spectogram.T.tostring()
     label_raw = np.array(label, dtype=np.uint8).tostring()
     example = tf.train.Example(features=tf.train.Features(feature={
         'X': tf.train.Feature(bytes_list=tf.train.BytesList(value=[spectogram_raw])),
         'y': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_raw]))
     }))
-    lock.acquire()
     writer.write(example.SerializeToString())
-    lock.release()
 
 
 def get_annotations_dict(dirname):
@@ -124,7 +113,6 @@ def save_partial_dataset(index, dirname, X, y, full_path, overwrite):
 
 def save_dataset(dirname, dataset_type, X, y, overwrite=False):
     global pool
-    global writer
     full_path = os.path.join(dirname, dataset_type)
     labels_file = os.path.join(dirname, dataset_type, 'labels.pickle')
     filenames_file = os.path.join(dirname, dataset_type, 'filenames.pickle')
@@ -161,13 +149,6 @@ def main(dataset_dir, overwrite, percent_val, percent_test, percent_dev):
     save_dataset(dataset_dir, 'dev', X_dev, y_dev, overwrite=overwrite)
 
 
-def init_pool(l):
-    global lock
-    lock = l
-
-
 if __name__ == '__main__':
     pool = multiprocessing.Pool(multiprocessing.cpu_count())
-    l = multiprocessing.Lock()
-    pool = multiprocessing.Pool(initializer=init_pool, initargs=(l,))
     main()
