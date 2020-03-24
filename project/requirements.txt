@@ -1,7 +1,7 @@
 appdirs==1.4.3
 appnope==0.1.0
 audioread==2.1.4
-bleach==2.0.0
+bleach==3.1.2
 click==6.7
 cycler==0.10.0
 Cython==0.25.2
